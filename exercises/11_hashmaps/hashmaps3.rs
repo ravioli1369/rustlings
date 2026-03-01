@@ -17,13 +17,13 @@ struct TeamScores {
 
 fn build_scores_table(results: &str) -> HashMap<&str, TeamScores> {
     // The name of the team is the key and its associated struct is the value.
-    let mut scores = HashMap::<&str, TeamScores>::new();
+    let mut scores: HashMap<&str, TeamScores> = HashMap::<&str, TeamScores>::new();
 
     for line in results.lines() {
-        let mut split_iterator = line.split(',');
+        let mut split_iterator: std::str::Split<'_, char> = line.split(',');
         // NOTE: We use `unwrap` because we didn't deal with error handling yet.
-        let team_1_name = split_iterator.next().unwrap();
-        let team_2_name = split_iterator.next().unwrap();
+        let team_1_name: &str = split_iterator.next().unwrap();
+        let team_2_name: &str = split_iterator.next().unwrap();
         let team_1_score: u8 = split_iterator.next().unwrap().parse().unwrap();
         let team_2_score: u8 = split_iterator.next().unwrap().parse().unwrap();
 
@@ -31,6 +31,24 @@ fn build_scores_table(results: &str) -> HashMap<&str, TeamScores> {
         // Keep in mind that goals scored by team 1 will be the number of goals
         // conceded by team 2. Similarly, goals scored by team 2 will be the
         // number of goals conceded by team 1.
+
+        scores
+            .entry(team_1_name)
+            .and_modify(|v: &mut TeamScores| v.goals_scored += team_1_score)
+            .and_modify(|v: &mut TeamScores| v.goals_conceded += team_2_score)
+            .or_insert(TeamScores {
+                goals_scored: team_1_score,
+                goals_conceded: team_2_score,
+            });
+
+        scores
+            .entry(team_2_name)
+            .and_modify(|v: &mut TeamScores| v.goals_scored += team_2_score)
+            .and_modify(|v: &mut TeamScores| v.goals_conceded += team_1_score)
+            .or_insert(TeamScores {
+                goals_scored: team_2_score,
+                goals_conceded: team_1_score,
+            });
     }
 
     scores
@@ -54,9 +72,11 @@ England,Spain,1,0";
     fn build_scores() {
         let scores = build_scores_table(RESULTS);
 
-        assert!(["England", "France", "Germany", "Italy", "Poland", "Spain"]
-            .into_iter()
-            .all(|team_name| scores.contains_key(team_name)));
+        assert!(
+            ["England", "France", "Germany", "Italy", "Poland", "Spain"]
+                .into_iter()
+                .all(|team_name| scores.contains_key(team_name))
+        );
     }
 
     #[test]
